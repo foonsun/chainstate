@@ -4,10 +4,11 @@
 #include <vector>
 
 #include <leveldb/db.h>
-
+#include <hiredis/hiredis.h>
 #include "hex.hh"
 #include "pubkey.hh"
 #include "varint.hh"
+
 
 using namespace std;
 
@@ -101,7 +102,13 @@ int main(int argc, char **argv)
             cerr << "obfuscation key not found... Please check bitcoin's log and report if bitcoin's obfuscation key not 0000000000000000." << endl;
         }
     }
-
+	// redis connect
+	redisContext *context = redisConnect("127.0.0.1", 6379);
+	if(context->err) {
+		redisFree(context);
+		printf("connect redisserver error:%s \n", context->errstr);
+		return 0;
+	}
     leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
     for (it->SeekToFirst(); it->Valid(); it->Next()) {
         string idx = it->key().ToString();
@@ -347,11 +354,17 @@ int main(int argc, char **argv)
 
         if (addr != string()) {
             cout << string_to_hex(tx) << ";" << txn << ";" << addr << ";" << amount << endl;
+			char des[1000];
+			sprintf(des, "%s %lu %s", "ZINCRBY bitcoin_address_balances_chainstate", amount, addr.c_str());	
+			const char *cmd = des;
+			redisReply *reply = (redisReply *)redisCommand(context, cmd);
+			printf("reply:%s \n", reply->str);
+			freeReplyObject(reply);
         } else {
             cout << string_to_hex(tx) << ";Invalid address or lost;" << amount << endl;
         }
     }
-
+	redisFree(context);
     delete it;
     delete db;
 }
