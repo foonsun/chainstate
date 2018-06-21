@@ -61,7 +61,3 @@ $ grep 1F1tAaz5x1HUXrCNLbtMDqcw6o5GNn4xqX /tmp/cs.output | awk -F ';' '{sum += $
 
 Please consider helping me:
 
-- BTC: 3G734WzCrphZxN7afnrbwunZjV8MBqWUUV
-- BCH: 1MQEd3csWAVRWcgVbqk8CoZYf312VM9vp1
-- LTC: MEQA2uDajDiT3EyH1opRvNwywTDLvskLnq
-
