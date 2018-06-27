@@ -12,7 +12,7 @@ echo "Cleaning existing files..."
 rm -f state cs.out cs.err
 
 echo "Stopping ${COINDAEMON}..."
-systemctl --user stop ${COINDAEMON}
+sudo service bitcoind stop
 
 echo "Copying chainstate..."
 cp -Rp ~/.${COINDIR}/chainstate state
@@ -21,7 +21,10 @@ echo "Syncing..."
 sync
 
 echo "Copying done. Restarting ${COINDAEMON}..."
-systemctl --user start ${COINDAEMON}
+sudo service bitcoind start
+
+echo "flush bitcoin redis..."
+redis-cli 'flushdb'
 
 echo "Running chainstate parser..."
 ./chainstate ${COIN} >cs.out 2>cs.err
@@ -52,5 +55,11 @@ ls -l ${BALANCES_FILE_SAMPLE}.gz
 
 echo "Cleaning state"
 rm -fr state cs.out cs.err
+ 
+TOTALBALANCES_FILE=totalbalances-bitcoin-$(TZ=UTC date +%Y%m%d-%H%M).log
+redis-cli --eval ./scripts/cal_all_bitcoin_balances.lua 1 z >./data/${TOTALBALANCES_FILE}
+
+TOTALADDRESSES_FILE=totaladdresses-bitcoin-$(TZ=UTC date +%Y%m%d-%H%M).log
+redis-cli --eval ./scripts/cal_all_bitcoin_address_count.lua >./data/${TOTALADDRESSES_FILE}
 
 exit 0
