@@ -12,7 +12,9 @@ echo "Cleaning existing files..."
 rm -f state cs.out cs.err
 
 echo "Stopping ${COINDAEMON}..."
-sudo service bitcoind stop
+#sudo service bitcoind stop
+#sudo supervisorctl stop bitcoin
+ps aux |grep "bitcoind" |grep -v -e "grep" |awk '{print $2}'|xargs kill -9
 
 echo "Copying chainstate..."
 cp -Rp ~/.${COINDIR}/chainstate state
@@ -21,7 +23,9 @@ echo "Syncing..."
 sync
 
 echo "Copying done. Restarting ${COINDAEMON}..."
-sudo service bitcoind start
+#sudo service bitcoind start
+#sudo supervisorctl start bitcoin
+/home/ubuntu/bitcoin-0.15.1/bin/bitcoind --conf=/home/ubuntu/.bitcoin/bitcoin.conf --daemon
 
 echo "flush bitcoin redis..."
 redis-cli 'flushdb'
@@ -49,9 +53,12 @@ echo "Compressing balances"
 gzip ${BALANCES_FILE}
 gzip ${BALANCES_FILE_SAMPLE}
 
-echo "Generated archive:"
+echo "Generated archive"
 ls -l ${BALANCES_FILE}.gz
 ls -l ${BALANCES_FILE_SAMPLE}.gz
+
+echo "move to data dir"
+mv ${BALANCES_FILE}.gz ${BALANCES_FILE_SAMPLE}.gz ./data/
 
 echo "Cleaning state"
 rm -fr state cs.out cs.err
@@ -61,5 +68,7 @@ redis-cli --eval ./scripts/cal_all_bitcoin_balances.lua 1 z >./data/${TOTALBALAN
 
 TOTALADDRESSES_FILE=totaladdresses-bitcoin-$(TZ=UTC date +%Y%m%d-%H%M).log
 redis-cli --eval ./scripts/cal_all_bitcoin_address_count.lua >./data/${TOTALADDRESSES_FILE}
+
+bash /home/ubuntu/pyblockchainserver/scripts/get_btc_top1000.sh
 
 exit 0
